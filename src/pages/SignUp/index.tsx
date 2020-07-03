@@ -5,6 +5,8 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import { FormHandles } from '@unform/core';
 import { Form } from '@unform/mobile';
+
+import api from '../../services/api';
 import getValidationErros from '../../utils/getValidationErros';
 
 import Button from '../../components/Button';
@@ -40,12 +42,14 @@ const SignUp: React.FC = () => {
         abortEarly: false,
       });
 
-      // await signUp({
-      //   email: data.email,
-      //   password: data.password,
-      // });
+      await api.post('/users', data);
 
-      // history.push('/dashboard');
+      Alert.alert(
+        'Cadastro realizado com sucesso!',
+        'Você já pode fazer login na aplicação.',
+      );
+
+      navigation.goBack();
     } catch (err) {
       if (err instanceof Yup.ValidationError) {
         const errors = getValidationErros(err);
