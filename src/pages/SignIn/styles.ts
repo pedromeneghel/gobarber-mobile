@@ -7,6 +7,8 @@ export const Container = styled.View`
   padding: 0 30px 120px;
 `;
 
+export const TextInput = styled.View``;
+
 export const Title = styled.Text`
   font-size: 24px;
   color: #f4ede8;
