@@ -1,48 +1,41 @@
 import React, {
+  useCallback,
   useEffect,
   useRef,
   useState,
-  useCallback,
   useImperativeHandle,
   forwardRef,
 } from 'react';
 import { TextInputProps } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import { useField } from '@unform/core';
+import * as Yup from 'yup';
 
-import { Container, TextInput, Icon } from './styles';
+import { Container, TextInput } from './styles';
 
 interface InputProps extends TextInputProps {
   name: string;
   icon: string;
 }
 
-interface InputValueReference {
+interface InputValueReferenc {
   value: string;
 }
 
-interface InputREf {
+interface InputRef {
   focus(): void;
 }
 
-const Input: React.RefForwardingComponent<InputREf, InputProps> = (
+const Input: React.ForwardRefRenderFunction<InputRef, InputProps> = (
   { name, icon, ...rest },
   ref,
 ) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [isField, setIsField] = useState(false);
-
   const inputElementRef = useRef<any>(null);
-  const { registerField, defaultValue = '', fieldName, error } = useField(name);
-  const inputValueRef = useRef<InputValueReference>({ value: defaultValue });
+  const { registerField, defaultValue = '', error, fieldName } = useField(name);
+  const inputValueRef = useRef<InputValueReferenc>({ value: defaultValue });
 
-  const handleInputFocus = useCallback(() => {
-    setIsFocused(true);
-  }, []);
-
-  const handleInputBlur = useCallback(() => {
-    setIsFocused(false);
-    setIsField(!!inputValueRef.current.value);
-  }, []);
+  const [isFilled, setIsFilled] = useState();
+  const [isFocused, setIsFocused] = useState();
 
   useImperativeHandle(ref, () => ({
     focus() {
@@ -65,23 +58,34 @@ const Input: React.RefForwardingComponent<InputREf, InputProps> = (
       },
     });
   }, [fieldName, registerField]);
+
+  const handleInputFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    setIsFocused(false);
+
+    setIsFilled(!!inputValueRef.current.value);
+  }, []);
+
   return (
     <Container isFocused={isFocused} isErrored={!!error}>
       <Icon
         name={icon}
         size={20}
-        color={isFocused || isField ? '#ff9000' : '#666360'}
+        style={{ marginRight: 16 }}
+        color={isFocused || isFilled ? '#ff9000' : '#666360'}
       />
       <TextInput
+        {...rest}
         ref={inputElementRef}
-        keyboardAppearance="dark"
         placeholderTextColor="#666360"
-        onFocus={handleInputFocus}
-        onBlur={handleInputBlur}
-        onChangeText={(value) => {
+        onChangeText={value => {
           inputValueRef.current.value = value;
         }}
-        {...rest}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
       />
     </Container>
   );

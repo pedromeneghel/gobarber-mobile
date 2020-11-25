@@ -8,14 +8,14 @@ import React, {
 import AsyncStorage from '@react-native-community/async-storage';
 import api from '../services/api';
 
-interface SignInCredentials {
-  email: string;
-  password: string;
-}
-
 interface AuthState {
   token: string;
   user: object;
+}
+
+interface SignInCredentials {
+  email: string;
+  password: string;
 }
 
 interface AuthContextData {
@@ -27,29 +27,22 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
+export function useAuth(): AuthContextData {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+
+  return context;
+}
+
 export const AuthProvider: React.FC = ({ children }) => {
   const [data, setData] = useState<AuthState>({} as AuthState);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadStoragedData(): Promise<void> {
-      const [token, user] = await AsyncStorage.multiGet([
-        '@GoBarbar:token',
-        '@GoBarbar:user',
-      ]);
-
-      if (token[1] && user[1]) {
-        setData({ token: token[1], user: JSON.parse(user[1]) });
-      }
-
-      setLoading(false);
-    }
-
-    loadStoragedData();
-  }, []);
-
   const signIn = useCallback(async ({ email, password }) => {
-    const response = await api.post('sessions', {
+    const response = await api.post('/sessions', {
       email,
       password,
     });
@@ -70,21 +63,26 @@ export const AuthProvider: React.FC = ({ children }) => {
     setData({} as AuthState);
   }, []);
 
+  useEffect(() => {
+    async function loadStoragedData(): Promise<void> {
+      const [token, user] = await AsyncStorage.multiGet([
+        '@GoBarber:token',
+        '@GoBarber:user',
+      ]);
+
+      if (token[1] && user[1]) {
+        setData({ token: token[1], user: JSON.parse(user[1]) });
+      }
+
+      setLoading(false);
+    }
+
+    loadStoragedData();
+  }, []);
+
   return (
     <AuthContext.Provider value={{ user: data.user, signIn, signOut, loading }}>
       {children}
     </AuthContext.Provider>
   );
 };
-
-function useAuth(): AuthContextData {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth must be use within an AuthProvider');
-  }
-
-  return context;
-}
-
-export { useAuth };

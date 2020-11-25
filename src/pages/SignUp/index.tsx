@@ -1,41 +1,51 @@
 import React, { useCallback, useRef } from 'react';
-import { Image, ScrollView, TextInput, Alert } from 'react-native';
-import * as Yup from 'yup';
-import Icon from 'react-native-vector-icons/Feather';
+import {
+  Image,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TextInput,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/Feather';
 import { FormHandles } from '@unform/core';
 import { Form } from '@unform/mobile';
-
+import * as Yup from 'yup';
+import getValidationErrors from '../../utils/getValidationErrors';
 import api from '../../services/api';
-import getValidationErros from '../../utils/getValidationErros';
 
-import Button from '../../components/Button';
 import Input from '../../components/Input';
+import Button from '../../components/Button';
+
+import { Container, BackToSignIn, BackToSignInText, Title } from './styles';
 
 import logoImg from '../../assets/logo.png';
-import { Container, Title, BackToSignIn, BackToSignInText } from './styles';
 
-interface SignFormData {
+interface SignUpFormData {
+  name: string;
   email: string;
   password: string;
 }
 
 const SignUp: React.FC = () => {
-  const formRef = useRef<FormHandles>();
   const navigation = useNavigation();
+
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
+  const formRef = useRef<FormHandles>(null);
 
   const handleSignUp = useCallback(
-    async (data: SignFormData) => {
+    async (data: SignUpFormData) => {
       try {
-        formRef.current?.setErrors({});
+        formRef.current?.setErrors([]);
 
         const schema = Yup.object().shape({
           name: Yup.string().required('Nome obrigatório'),
           email: Yup.string()
-            .required('E-mail obrigatório')
-            .email('Digite um e-mail válido'),
+            .email('Digite um e-mail válido')
+            .required('E-mail obrigatório'),
           password: Yup.string().min(6, 'No mínimo 6 digitos'),
         });
 
@@ -43,25 +53,23 @@ const SignUp: React.FC = () => {
           abortEarly: false,
         });
 
-        await api.post('/users', data);
+        await api.post('users', data);
 
         Alert.alert(
           'Cadastro realizado com sucesso!',
           'Você já pode fazer login na aplicação.',
         );
 
-        navigation.goBack();
+        navigation.navigate('SignIn');
       } catch (err) {
         if (err instanceof Yup.ValidationError) {
-          const errors = getValidationErros(err);
+          const errors = getValidationErrors(err);
           formRef.current?.setErrors(errors);
-
-          return;
         }
 
         Alert.alert(
           'Erro no cadastro',
-          'Ocorreu um erro ao fazer o cadastro, tente novamente.',
+          'Ocorreu um erro ao fazer o cadastro, tente novamente',
         );
       }
     },
@@ -70,67 +78,68 @@ const SignUp: React.FC = () => {
 
   return (
     <>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ flex: 1 }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        enabled
       >
-        <Container>
-          <Image source={logoImg} />
-          <Title>Crie sua conta</Title>
+        <ScrollView
+          contentContainerStyle={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Container>
+            <Image source={logoImg} />
 
-          <Form ref={formRef} onSubmit={handleSignUp}>
-            <Input
-              autoCapitalize="words"
-              name="name"
-              icon="user"
-              placeholder="Nome"
-              returnKeyType="next"
-              onSubmitEditing={() => {
-                emailInputRef.current?.focus();
-              }}
-            />
-            <Input
-              ref={emailInputRef}
-              keyboardType="email-address"
-              autoCorrect={false}
-              autoCapitalize="none"
-              name="email"
-              icon="mail"
-              returnKeyType="next"
-              placeholder="E-mail"
-              onSubmitEditing={() => {
-                passwordInputRef.current?.focus();
-              }}
-            />
-            <Input
-              ref={passwordInputRef}
-              secureTextEntry
-              name="password"
-              icon="lock"
-              placeholder="Senha"
-              textContentType="newPassword"
-              returnKeyType="send"
-              onSubmitEditing={() => {
-                formRef.current?.submitForm();
-              }}
-            />
-          </Form>
-          <Button
-            onPress={() => {
-              formRef.current?.submitForm();
-            }}
-          >
-            Entrar
-          </Button>
-        </Container>
-      </ScrollView>
-      <BackToSignIn
-        onPress={() => {
-          navigation.goBack();
-        }}
-      >
+            <View>
+              <Title>Crie sua conta</Title>
+            </View>
+
+            <Form ref={formRef} onSubmit={handleSignUp}>
+              <Input
+                name="name"
+                icon="user"
+                placeholder="Nome completo"
+                autoCorrect
+                autoCapitalize="words"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  emailInputRef.current?.focus();
+                }}
+              />
+              <Input
+                ref={emailInputRef}
+                name="email"
+                icon="mail"
+                placeholder="E-mail"
+                keyboardType="email-address"
+                autoCorrect={false}
+                autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => {
+                  passwordInputRef.current?.focus();
+                }}
+              />
+              <Input
+                ref={passwordInputRef}
+                name="password"
+                icon="lock"
+                placeholder="Senha"
+                secureTextEntry
+                textContentType="newPassword"
+                returnKeyType="send"
+                onSubmitEditing={() => formRef.current?.submitForm()}
+              />
+            </Form>
+
+            <Button onPress={() => formRef.current?.submitForm()}>
+              Entrar
+            </Button>
+          </Container>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      <BackToSignIn onPress={() => navigation.goBack()}>
         <Icon name="arrow-left" size={20} color="#fff" />
-        <BackToSignInText>Voltar para logon</BackToSignInText>
+        <BackToSignInText>Voltar para o logon</BackToSignInText>
       </BackToSignIn>
     </>
   );
